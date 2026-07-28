@@ -407,6 +407,11 @@ const MOVE_TOLERANCE = 12;
 const mapContainer = map.getContainer();
 
 function startPress(e) {
+  // Un pincement à 2 doigts (zoom) ne doit jamais déclencher l'ajout
+  if (e.touches && e.touches.length > 1) {
+    cancelPress();
+    return;
+  }
   const point = e.touches ? e.touches[0] : e;
   pressStart = { x: point.clientX, y: point.clientY };
   pressTimer = setTimeout(() => {
@@ -419,6 +424,11 @@ function startPress(e) {
 
 function movePress(e) {
   if (!pressStart) return;
+  // Dès qu'un deuxième doigt apparaît (pincement), on annule
+  if (e.touches && e.touches.length > 1) {
+    cancelPress();
+    return;
+  }
   const point = e.touches ? e.touches[0] : e;
   const dx = point.clientX - pressStart.x;
   const dy = point.clientY - pressStart.y;
