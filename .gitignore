@@ -1,0 +1,17 @@
+# Dépendances
+node_modules/
+
+# Données générées par l'app (points + photos uploadées)
+data/*.json
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+
+# Env
+.env
+
+# OS
+.DS_Store
