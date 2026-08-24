@@ -33,17 +33,64 @@ const upload = multer({
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Migre les points enregistrés à l'ancien format (pseudo/photo/description directs)
-// vers le nouveau format (poseur + spectateurs).
+function normalizeName(name) {
+  return String(name).trim().toLowerCase();
+}
+
+// Ajoute pseudo aux spectateurs seulement s'il n'apparaît pas déjà comme poseur
+// ou spectateur (le pseudo reste unique, mais on peut quand même lui associer
+// une nouvelle photo).
+function addSpectateur(point, pseudo) {
+  const known = new Set(point.spectateurs.map(normalizeName));
+  if (point.poseur) known.add(normalizeName(point.poseur.pseudo));
+  if (!known.has(normalizeName(pseudo))) {
+    point.spectateurs.push(pseudo);
+  }
+}
+
+// Migre les points enregistrés dans un ancien format vers le format actuel :
+// poseur { pseudo, createdAt } | null, spectateurs: pseudos uniques (string[]),
+// photos: [{ url, pseudo, createdAt }] (une par photo, plusieurs possibles par pseudo).
 function normalizePoint(point) {
-  if (point.poseur !== undefined || point.spectateurs !== undefined) {
-    if (!point.spectateurs) point.spectateurs = [];
+  if (Array.isArray(point.photos)) {
     return point;
   }
+
+  const photos = [];
+  let poseur = null;
+  const spectateurs = [];
+
+  if (point.poseur !== undefined || point.spectateurs !== undefined) {
+    // Format intermédiaire : poseur/spectateurs avec photo directe sur chaque personne.
+    if (point.poseur) {
+      poseur = { pseudo: point.poseur.pseudo, createdAt: point.poseur.createdAt };
+      if (point.poseur.photo) {
+        photos.push({ url: point.poseur.photo, pseudo: point.poseur.pseudo, createdAt: point.poseur.createdAt });
+      }
+    }
+    (point.spectateurs || []).forEach(s => {
+      if (typeof s === 'string') {
+        if (!spectateurs.some(name => normalizeName(name) === normalizeName(s))) spectateurs.push(s);
+        return;
+      }
+      if (!spectateurs.some(name => normalizeName(name) === normalizeName(s.pseudo))) spectateurs.push(s.pseudo);
+      if (s.photo) photos.push({ url: s.photo, pseudo: s.pseudo, createdAt: s.createdAt });
+    });
+  } else {
+    // Format le plus ancien : pseudo/photo directement sur le point.
+    poseur = { pseudo: point.pseudo, createdAt: point.createdAt };
+    if (point.photo) photos.push({ url: point.photo, pseudo: point.pseudo, createdAt: point.createdAt });
+  }
+
   return {
-    ...point,
-    poseur: { pseudo: point.pseudo, photo: point.photo || null, createdAt: point.createdAt },
-    spectateurs: []
+    id: point.id,
+    lat: point.lat,
+    lng: point.lng,
+    description: point.description,
+    createdAt: point.createdAt,
+    poseur,
+    spectateurs,
+    photos
   };
 }
 
@@ -84,14 +131,16 @@ app.post('/api/points', upload.single('photo'), (req, res) => {
       description: String(description).slice(0, 500),
       createdAt,
       poseur: null,
-      spectateurs: []
+      spectateurs: [],
+      photos: []
     };
 
     if (role === 'spectateur') {
-      point.spectateurs.push({ pseudo: cleanPseudo, photo: photoPath, createdAt });
+      point.spectateurs.push(cleanPseudo);
     } else {
-      point.poseur = { pseudo: cleanPseudo, photo: photoPath, createdAt };
+      point.poseur = { pseudo: cleanPseudo, createdAt };
     }
+    if (photoPath) point.photos.push({ url: photoPath, pseudo: cleanPseudo, createdAt });
 
     const points = readPoints();
     points.push(point);
@@ -116,11 +165,13 @@ app.post('/api/points/:id/sightings', upload.single('photo'), (req, res) => {
       return res.status(404).json({ error: 'Sticker introuvable' });
     }
 
-    point.spectateurs.push({
-      pseudo: String(pseudo).slice(0, 50),
-      photo: req.file ? `/uploads/${req.file.filename}` : null,
-      createdAt: new Date().toISOString()
-    });
+    const cleanPseudo = String(pseudo).slice(0, 50);
+    const createdAt = new Date().toISOString();
+
+    addSpectateur(point, cleanPseudo);
+    if (req.file) {
+      point.photos.push({ url: `/uploads/${req.file.filename}`, pseudo: cleanPseudo, createdAt });
+    }
 
     writePoints(points);
     res.status(201).json(point);

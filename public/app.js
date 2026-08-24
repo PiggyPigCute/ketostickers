@@ -55,17 +55,11 @@ function openInfo(point) {
     statusLines.push(`Posé par <b>${escapeHtml(point.poseur.pseudo)}</b>`);
   }
   if (point.spectateurs && point.spectateurs.length) {
-    const names = point.spectateurs.map(s => `<b>${escapeHtml(s.pseudo)}</b>`).join(', ');
+    const names = point.spectateurs.map(name => `<b>${escapeHtml(name)}</b>`).join(', ');
     statusLines.push(`Vu par ${names}`);
   }
 
-  const photos = [];
-  if (point.poseur && point.poseur.photo) {
-    photos.push({ photo: point.poseur.photo, pseudo: point.poseur.pseudo, createdAt: point.poseur.createdAt });
-  }
-  (point.spectateurs || []).forEach(s => {
-    if (s.photo) photos.push({ photo: s.photo, pseudo: s.pseudo, createdAt: s.createdAt });
-  });
+  const photos = point.photos || [];
 
   infoContent.innerHTML = `
     <p class="info-status">${statusLines.join('<br>')}</p>
@@ -73,7 +67,7 @@ function openInfo(point) {
     <p class="info-desc">${escapeHtml(point.description)}</p>
     ${photos.length ? `<div class="photo-gallery">${photos.map(p => `
       <figure>
-        <img src="${p.photo}" alt="Photo du sticker">
+        <img src="${p.url}" alt="Photo du sticker">
         <figcaption>Par <b>${escapeHtml(p.pseudo)}</b> — ${formatDate(p.createdAt)}</figcaption>
       </figure>
     `).join('')}</div>` : ''}
