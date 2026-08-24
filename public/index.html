@@ -7,268 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --ink: #201a15;
-    --ink-soft: #3a2f26;
-    --paper: #f3e9d2;
-    --paper-soft: #ece0c4;
-    --accent-yellow: #f2c14e;
-    --accent-pink: #e8607a;
-    --accent-teal: #2f9e8f;
-    --accent-orange: #ef7d3b;
-    --shadow: 0 6px 18px rgba(0,0,0,0.35);
-  }
-
-  * { box-sizing: border-box; }
-
-  html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    background: var(--ink);
-    font-family: 'Work Sans', sans-serif;
-    color: var(--paper);
-    overscroll-behavior: none;
-  }
-
-  #map {
-    position: fixed;
-    inset: 0;
-    background: var(--ink);
-  }
-
-  /* Effet "vieille carte" sur les tuiles */
-  .leaflet-tile-pane {
-    filter: sepia(35%) saturate(65%) brightness(78%) contrast(105%);
-  }
-
-  .leaflet-control-attribution {
-    background: rgba(32, 26, 21, 0.75) !important;
-    color: var(--paper-soft) !important;
-    font-family: 'Work Sans', sans-serif;
-  }
-  .leaflet-control-attribution a { color: var(--accent-yellow) !important; }
-
-  .leaflet-control-zoom a {
-    background: var(--paper) !important;
-    color: var(--ink) !important;
-    border: none !important;
-  }
-
-  /* Barre du haut */
-  #topbar {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 1000;
-    padding: 14px 18px 22px;
-    background: linear-gradient(to bottom, rgba(32,26,21,0.92), rgba(32,26,21,0));
-    pointer-events: none;
-    text-align: center;
-  }
-  #topbar h1 {
-    font-family: 'Permanent Marker', cursive;
-    font-size: 28px;
-    margin: 0;
-    color: var(--accent-yellow);
-    text-shadow: 2px 2px 0 var(--ink);
-    letter-spacing: 0.5px;
-    transform: rotate(-1.5deg);
-  }
-  #topbar p {
-    margin: 2px 0 0;
-    font-size: 12px;
-    color: var(--paper-soft);
-    letter-spacing: 0.5px;
-  }
-
-  /* Astuce discrète en bas */
-  #hint {
-    position: fixed;
-    bottom: 18px; left: 50%;
-    transform: translateX(-50%);
-    z-index: 1000;
-    background: var(--ink-soft);
-    color: var(--paper-soft);
-    padding: 8px 16px;
-    border-radius: 999px;
-    font-size: 13px;
-    box-shadow: var(--shadow);
-    pointer-events: none;
-    transition: opacity 0.4s;
-  }
-  #hint.hidden { opacity: 0; }
-
-  /* Marqueurs "sticker" */
-  .sticker-marker {
-    width: 34px;
-    height: 34px;
-    border-radius: 50% 50% 50% 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    box-shadow: var(--shadow);
-    border: 2px solid rgba(255,255,255,0.85);
-    cursor: pointer;
-  }
-
-  /* Modales */
-  .modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(20, 16, 12, 0.72);
-    z-index: 2000;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.25s ease;
-  }
-  .modal-backdrop.visible {
-    opacity: 1;
-    pointer-events: auto;
-  }
-  @media (min-width: 640px) {
-    .modal-backdrop { align-items: center; }
-  }
-
-  .modal-card {
-    background: var(--paper);
-    color: var(--ink);
-    width: 100%;
-    max-width: 420px;
-    max-height: 86vh;
-    overflow-y: auto;
-    border-radius: 18px 18px 0 0;
-    padding: 24px 22px 28px;
-    transform: translateY(24px);
-    transition: transform 0.25s ease;
-    box-shadow: 0 -8px 30px rgba(0,0,0,0.4);
-  }
-  .modal-backdrop.visible .modal-card { transform: translateY(0); }
-  @media (min-width: 640px) {
-    .modal-card { border-radius: 18px; transform: scale(0.96); }
-    .modal-backdrop.visible .modal-card { transform: scale(1); }
-  }
-
-  .modal-card h2 {
-    font-family: 'Permanent Marker', cursive;
-    font-size: 22px;
-    margin: 0 0 4px;
-    color: var(--ink);
-  }
-  .modal-card .subtitle {
-    font-size: 13px;
-    color: var(--ink-soft);
-    margin: 0 0 18px;
-    opacity: 0.75;
-  }
-
-  label {
-    display: block;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    margin: 14px 0 6px;
-    color: var(--ink-soft);
-  }
-  input[type="text"], textarea {
-    width: 100%;
-    border: 2px solid var(--ink);
-    border-radius: 10px;
-    padding: 10px 12px;
-    font-family: 'Work Sans', sans-serif;
-    font-size: 15px;
-    background: #fff;
-    color: var(--ink);
-    resize: vertical;
-  }
-  textarea { min-height: 70px; }
-
-  input[type="file"] {
-    font-size: 13px;
-    width: 100%;
-  }
-
-  .btn-row {
-    display: flex;
-    gap: 10px;
-    margin-top: 22px;
-  }
-  button {
-    font-family: 'Work Sans', sans-serif;
-    font-weight: 600;
-    border: none;
-    border-radius: 10px;
-    padding: 12px 16px;
-    font-size: 14px;
-    cursor: pointer;
-    flex: 1;
-  }
-  .btn-primary {
-    background: var(--accent-pink);
-    color: #fff;
-  }
-  .btn-primary:disabled { opacity: 0.6; cursor: default; }
-  .btn-secondary {
-    background: transparent;
-    color: var(--ink-soft);
-    border: 2px solid var(--ink-soft);
-  }
-
-  .error-msg {
-    color: var(--accent-pink);
-    font-size: 13px;
-    margin-top: 10px;
-    display: none;
-  }
-  .error-msg.visible { display: block; }
-
-  /* Fiche d'un point existant */
-  .info-pseudo {
-    font-family: 'Permanent Marker', cursive;
-    font-size: 20px;
-    color: var(--accent-teal);
-    margin: 0 0 2px;
-    transform: rotate(-1deg);
-  }
-  .info-date {
-    font-size: 12px;
-    color: var(--ink-soft);
-    opacity: 0.7;
-    margin: 0 0 14px;
-  }
-  .info-desc {
-    font-size: 15px;
-    line-height: 1.5;
-    margin: 0 0 14px;
-    white-space: pre-wrap;
-  }
-  .info-photo {
-    width: 100%;
-    border-radius: 10px;
-    display: block;
-    border: 3px solid var(--ink);
-    transform: rotate(-0.6deg);
-  }
-
-  #counter-badge {
-    position: fixed;
-    top: 16px; right: 16px;
-    z-index: 1000;
-    background: var(--accent-teal);
-    color: #fff;
-    font-weight: 700;
-    font-size: 13px;
-    padding: 6px 12px;
-    border-radius: 999px;
-    box-shadow: var(--shadow);
-    transform: rotate(3deg);
-  }
-</style>
+<link rel="stylesheet" href="/style.css">
 </head>
 <body>
 
@@ -287,8 +26,13 @@
 <div id="add-backdrop" class="modal-backdrop">
   <div class="modal-card">
     <h2>Nouveau sticker 📍</h2>
-    <p class="subtitle">Raconte où et comment tu l'as posé</p>
+    <p class="subtitle" id="add-subtitle">Raconte où et comment tu l'as posé</p>
     <form id="add-form">
+      <div class="role-toggle">
+        <button type="button" class="active" id="role-poseur" data-role="poseur">Tu as posé</button>
+        <button type="button" id="role-spectateur" data-role="spectateur">Tu as vu</button>
+      </div>
+
       <label for="pseudo">Ton pseudo</label>
       <input type="text" id="pseudo" required maxlength="50" placeholder="Ex : Piggy">
 
@@ -313,199 +57,29 @@
   <div class="modal-card" id="info-content"></div>
 </div>
 
+<!-- Modale "Je l'ai vu !" -->
+<div id="sighting-backdrop" class="modal-backdrop">
+  <div class="modal-card">
+    <h2>Je l'ai vu ! 👀</h2>
+    <p class="subtitle">Ajoute-toi à la liste des spectateurs</p>
+    <form id="sighting-form">
+      <label for="sighting-pseudo">Ton pseudo</label>
+      <input type="text" id="sighting-pseudo" required maxlength="50" placeholder="Ex : Piggy">
+
+      <label for="sighting-photo">Photo (facultatif)</label>
+      <input type="file" id="sighting-photo" accept="image/*" capture="environment">
+
+      <p class="error-msg" id="sighting-error"></p>
+
+      <div class="btn-row">
+        <button type="button" class="btn-secondary" id="cancel-sighting">Annuler</button>
+        <button type="submit" class="btn-primary" id="submit-sighting">Valider</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-const STICKER_COLORS = ['#e8607a', '#2f9e8f', '#f2c14e', '#ef7d3b', '#8b6fd9'];
-const STICKER_EMOJIS = ['📍', '✨', '🔥', '🌟', '💫'];
-
-const map = L.map('map', { zoomControl: true, worldCopyJump: true }).setView([30, 10], 2.5);
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; OpenStreetMap contributors',
-  maxZoom: 19,
-  minZoom: 2
-}).addTo(map);
-
-const markersLayer = L.layerGroup().addTo(map);
-const hint = document.getElementById('hint');
-const counterBadge = document.getElementById('counter-badge');
-
-function stickerIcon(seed) {
-  const color = STICKER_COLORS[seed % STICKER_COLORS.length];
-  const emoji = STICKER_EMOJIS[seed % STICKER_EMOJIS.length];
-  const rotation = (seed % 7) - 3;
-  return L.divIcon({
-    className: '',
-    html: `<div class="sticker-marker" style="background:${color}; transform: rotate(${rotation}deg);">${emoji}</div>`,
-    iconSize: [34, 34],
-    iconAnchor: [17, 17]
-  });
-}
-
-function formatDate(iso) {
-  const d = new Date(iso);
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-}
-
-function renderPoint(point, index) {
-  const marker = L.marker([point.lat, point.lng], { icon: stickerIcon(index) });
-  marker.on('click', () => openInfo(point));
-  marker.addTo(markersLayer);
-}
-
-async function loadPoints() {
-  const res = await fetch('/api/points');
-  const points = await res.json();
-  markersLayer.clearLayers();
-  points.forEach((p, i) => renderPoint(p, i));
-  counterBadge.textContent = `${points.length} sticker${points.length > 1 ? 's' : ''}`;
-  return points;
-}
-
-// --- Info modale ---
-const infoBackdrop = document.getElementById('info-backdrop');
-const infoContent = document.getElementById('info-content');
-
-function openInfo(point) {
-  infoContent.innerHTML = `
-    <p class="info-pseudo">${escapeHtml(point.pseudo)}</p>
-    <p class="info-date">${formatDate(point.createdAt)}</p>
-    <p class="info-desc">${escapeHtml(point.description)}</p>
-    ${point.photo ? `<img class="info-photo" src="${point.photo}" alt="Photo du sticker">` : ''}
-    <div class="btn-row">
-      <button type="button" class="btn-secondary" id="close-info">Fermer</button>
-    </div>
-  `;
-  infoBackdrop.classList.add('visible');
-  document.getElementById('close-info').addEventListener('click', closeInfo);
-}
-function closeInfo() {
-  infoBackdrop.classList.remove('visible');
-}
-infoBackdrop.addEventListener('click', (e) => {
-  if (e.target === infoBackdrop) closeInfo();
-});
-
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-// --- Ajout par appui long ---
-const addBackdrop = document.getElementById('add-backdrop');
-const addForm = document.getElementById('add-form');
-const addError = document.getElementById('add-error');
-const submitBtn = document.getElementById('submit-add');
-let pendingLatLng = null;
-
-let pressTimer = null;
-let pressStart = null;
-const LONG_PRESS_MS = 550;
-const MOVE_TOLERANCE = 12;
-
-const mapContainer = map.getContainer();
-
-function startPress(e) {
-  // Un pincement à 2 doigts (zoom) ne doit jamais déclencher l'ajout
-  if (e.touches && e.touches.length > 1) {
-    cancelPress();
-    return;
-  }
-  const point = e.touches ? e.touches[0] : e;
-  pressStart = { x: point.clientX, y: point.clientY };
-  pressTimer = setTimeout(() => {
-    const latlng = map.containerPointToLatLng(
-      map.mouseEventToContainerPoint(point)
-    );
-    triggerAdd(latlng);
-  }, LONG_PRESS_MS);
-}
-
-function movePress(e) {
-  if (!pressStart) return;
-  // Dès qu'un deuxième doigt apparaît (pincement), on annule
-  if (e.touches && e.touches.length > 1) {
-    cancelPress();
-    return;
-  }
-  const point = e.touches ? e.touches[0] : e;
-  const dx = point.clientX - pressStart.x;
-  const dy = point.clientY - pressStart.y;
-  if (Math.sqrt(dx * dx + dy * dy) > MOVE_TOLERANCE) {
-    cancelPress();
-  }
-}
-
-function cancelPress() {
-  clearTimeout(pressTimer);
-  pressStart = null;
-}
-
-mapContainer.addEventListener('mousedown', startPress);
-mapContainer.addEventListener('mousemove', movePress);
-mapContainer.addEventListener('mouseup', cancelPress);
-mapContainer.addEventListener('mouseleave', cancelPress);
-
-mapContainer.addEventListener('touchstart', startPress, { passive: true });
-mapContainer.addEventListener('touchmove', movePress, { passive: true });
-mapContainer.addEventListener('touchend', cancelPress);
-mapContainer.addEventListener('touchcancel', cancelPress);
-mapContainer.addEventListener('contextmenu', (e) => e.preventDefault());
-
-function triggerAdd(latlng) {
-  pendingLatLng = latlng;
-  addError.classList.remove('visible');
-  addForm.reset();
-  addBackdrop.classList.add('visible');
-  hint.classList.add('hidden');
-}
-
-document.getElementById('cancel-add').addEventListener('click', () => {
-  addBackdrop.classList.remove('visible');
-});
-addBackdrop.addEventListener('click', (e) => {
-  if (e.target === addBackdrop) addBackdrop.classList.remove('visible');
-});
-
-addForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  if (!pendingLatLng) return;
-
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Envoi...';
-  addError.classList.remove('visible');
-
-  const formData = new FormData();
-  formData.append('lat', pendingLatLng.lat);
-  formData.append('lng', pendingLatLng.lng);
-  formData.append('pseudo', document.getElementById('pseudo').value);
-  formData.append('description', document.getElementById('description').value);
-  const photoFile = document.getElementById('photo').files[0];
-  if (photoFile) formData.append('photo', photoFile);
-
-  try {
-    const res = await fetch('/api/points', { method: 'POST', body: formData });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Erreur lors de l\'envoi');
-    }
-    addBackdrop.classList.remove('visible');
-    await loadPoints();
-  } catch (err) {
-    addError.textContent = err.message;
-    addError.classList.add('visible');
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Poser le sticker';
-  }
-});
-
-// Masque l'astuce après la première interaction avec la carte
-map.once('movestart zoomstart', () => hint.classList.add('hidden'));
-setTimeout(() => hint.classList.add('hidden'), 6000);
-
-loadPoints();
-</script>
+<script src="/app.js"></script>
 </body>
 </html>
